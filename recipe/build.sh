@@ -13,7 +13,8 @@ fi
 
 
 BUILD_DIR=${SRC_DIR}/build
-mkdir -p ${BUILD_DIR}
+rm -rf "${BUILD_DIR}"
+mkdir "${BUILD_DIR}"
 cd ${BUILD_DIR}
 
 if [[ "$CONDA_BUILD_CROSS_COMPILATION" == 1 ]]; then
