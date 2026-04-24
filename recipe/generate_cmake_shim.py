@@ -48,6 +48,10 @@ if(NOT _ipp_component MATCHES "PythonWheelRuntimeLibraries$")
   return()
 endif()
 
+# Strip ITKPythonPackage's suffix (PythonWheelRuntimeLibraries) to get the module name.
+# Note: this feedstock uses WRAP_ITK_INSTALL_COMPONENT_IDENTIFIER=PythonWrapping (not PythonWheel).
+# The shim intentionally maps PythonWheel* → installed files so ITKPythonPackage can use
+# the conda prefix as a build cache without recompiling ITK.
 string(REGEX REPLACE "PythonWheelRuntimeLibraries$" "" _ipp_module "${_ipp_component}")
 
 set(_ipp_sentinel "${CMAKE_INSTALL_PREFIX}/itk/.conda_global_done")
