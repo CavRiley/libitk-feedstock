@@ -15,10 +15,12 @@ import sys
 
 
 def find_itk_version(build_dir):
-    pattern = os.path.join(build_dir, "**", "ITKConfig.cmake")
+    # Target only the cmake config install location (ITK-x.y/ITKConfig.cmake),
+    # not the many ITKConfig.cmake files cmake generates in CMakeFiles/ and CMakeTmp/.
+    pattern = os.path.join(build_dir, "**", "ITK-*", "ITKConfig.cmake")
     matches = glob.glob(pattern, recursive=True)
     if not matches:
-        sys.exit(f"ERROR: ITKConfig.cmake not found under {build_dir}")
+        sys.exit(f"ERROR: ITKConfig.cmake not found under {build_dir}/ITK-*/")
     versions = {os.path.basename(os.path.dirname(m)) for m in matches}
     if len(versions) > 1:
         sys.exit(f"ERROR: multiple ITK versions found under {build_dir}: {sorted(versions)}")
