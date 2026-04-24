@@ -14,16 +14,16 @@ import re
 import sys
 
 
-def find_itk_version(build_dir):
-    # Target only the cmake config install location (ITK-x.y/ITKConfig.cmake),
-    # not the many ITKConfig.cmake files cmake generates in CMakeFiles/ and CMakeTmp/.
-    pattern = os.path.join(build_dir, "**", "ITK-*", "ITKConfig.cmake")
-    matches = glob.glob(pattern, recursive=True)
+def find_itk_version(prefix):
+    # The installed cmake config is at <prefix>/lib/cmake/ITK-x.y/ITKConfig.cmake.
+    # This is populated by the libitk-devel install step before the shim generator runs.
+    pattern = os.path.join(prefix, "lib", "cmake", "ITK-*", "ITKConfig.cmake")
+    matches = glob.glob(pattern)
     if not matches:
-        sys.exit(f"ERROR: ITKConfig.cmake not found under {build_dir}/ITK-*/")
+        sys.exit(f"ERROR: ITKConfig.cmake not found in {prefix}/lib/cmake/ITK-*/")
     versions = {os.path.basename(os.path.dirname(m)) for m in matches}
     if len(versions) > 1:
-        sys.exit(f"ERROR: multiple ITK versions found under {build_dir}: {sorted(versions)}")
+        sys.exit(f"ERROR: multiple ITK versions in {prefix}: {sorted(versions)}")
     version = versions.pop()
     if not re.match(r"^ITK-\d+\.\d+", version):
         sys.exit(f"ERROR: unexpected ITK version directory name '{version}' (expected ITK-X.Y...)")
@@ -123,7 +123,7 @@ def main():
     parser.add_argument("--prefix", required=True,
                         help="Conda install prefix (PREFIX on Unix, LIBRARY_PREFIX on Windows)")
     args = parser.parse_args()
-    write_shim(args.prefix, find_itk_version(args.build_dir))
+    write_shim(args.prefix, find_itk_version(args.prefix))
 
 
 if __name__ == "__main__":
