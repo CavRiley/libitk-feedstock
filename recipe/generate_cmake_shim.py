@@ -8,26 +8,25 @@ This feedstock builds with WRAP_ITK_INSTALL_COMPONENT_IDENTIFIER=PythonWrapping
 requests to files already installed in the conda prefix.
 """
 import argparse
-import glob
 import os
 import re
 import sys
 
 
-def find_itk_version(prefix):
-    # The installed cmake config is at <prefix>/lib/cmake/ITK-x.y/ITKConfig.cmake.
-    # This is populated by the libitk-devel install step before the shim generator runs.
-    pattern = os.path.join(prefix, "lib", "cmake", "ITK-*", "ITKConfig.cmake")
-    matches = glob.glob(pattern)
-    if not matches:
-        sys.exit(f"ERROR: ITKConfig.cmake not found in {prefix}/lib/cmake/ITK-*/")
-    versions = {os.path.basename(os.path.dirname(m)) for m in matches}
-    if len(versions) > 1:
-        sys.exit(f"ERROR: multiple ITK versions in {prefix}: {sorted(versions)}")
-    version = versions.pop()
-    if not re.match(r"^ITK-\d+\.\d+", version):
-        sys.exit(f"ERROR: unexpected ITK version directory name '{version}' (expected ITK-X.Y...)")
-    return version
+def find_itk_version(build_dir):
+    # ITK generates ITKConfigVersion.cmake at the build root during cmake configure.
+    # Each output gets its own isolated staging prefix, so the prefix cannot be used.
+    version_file = os.path.join(build_dir, "ITKConfigVersion.cmake")
+    if not os.path.exists(version_file):
+        sys.exit(f"ERROR: {version_file} not found")
+    with open(version_file) as f:
+        content = f.read()
+    m = re.search(r'set\s*\(\s*PACKAGE_VERSION\s+"([^"]+)"\s*\)', content)
+    if not m:
+        sys.exit(f"ERROR: PACKAGE_VERSION not found in {version_file}")
+    full_version = m.group(1)  # e.g. "6.0.0"
+    parts = full_version.split(".")
+    return f"ITK-{parts[0]}.{parts[1]}"  # e.g. "ITK-6.0"
 
 
 SHIM_TEMPLATE = r"""# Relocatable cmake_install.cmake — conda libitk-wrapping.
@@ -123,7 +122,7 @@ def main():
     parser.add_argument("--prefix", required=True,
                         help="Conda install prefix (PREFIX on Unix, LIBRARY_PREFIX on Windows)")
     args = parser.parse_args()
-    write_shim(args.prefix, find_itk_version(args.prefix))
+    write_shim(args.prefix, find_itk_version(args.build_dir))
 
 
 if __name__ == "__main__":
