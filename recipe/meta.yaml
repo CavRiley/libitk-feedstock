@@ -1,14 +1,15 @@
-{% set version = "5.4.6" %}
+{% set version = "6.0.0" %}
 
 package:
   name: libitk
   version: {{ version }}
 
 source:
-  url: https://github.com/InsightSoftwareConsortium/ITK/archive/v{{ version }}.tar.gz
-  sha256: cf28bc7220c57c24ebcbabbd3b2544ea7ab65f0aad430a99f8e157738ed812b7
-  patches:
-    - 0001-BUG-use-check_symbol_exists-for-TIFFFieldReadCount.patch
+  path: /Users/cavriley/programs/ITK_fork
+#  url: https://github.com/InsightSoftwareConsortium/ITK/archive/v{{ version }}.tar.gz
+#  sha256: cf28bc7220c57c24ebcbabbd3b2544ea7ab65f0aad430a99f8e157738ed812b7
+#  patches:
+#    - 0001-BUG-use-check_symbol_exists-for-TIFFFieldReadCount.patch
 
 build:
   number: 3
@@ -98,10 +99,12 @@ outputs:
         - {{ pin_subpackage("libitk", exact=True) }}
       run:
         - python
+        - numpy
         - {{ pin_subpackage("libitk", exact=True) }}
     test:
       requires:
         - python {{ python }}
+        - numpy
       imports:
         - itk
 
