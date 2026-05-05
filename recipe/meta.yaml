@@ -12,7 +12,7 @@ source:
 #    - 0001-BUG-use-check_symbol_exists-for-TIFFFieldReadCount.patch
 
 build:
-  number: 3
+  number: 5
   skip: true  # [win and vc<14]
 
 requirements:
@@ -109,6 +109,30 @@ outputs:
         - numpy
       imports:
         - itk
+
+  # Wrapping infrastructure (CMake helpers + Wrapping/ source tree + per-module
+  # .wrap files) needed to build NEW Python-wrapped remote modules against an
+  # installed ITK. End-user `import itk` does NOT need this output.
+  - name: libitk-wrapping-devel
+    script: libitk-wrapping-devel_install.sh  # [not win]
+    script: libitk-wrapping-devel_install.bat  # [win]
+    requirements:
+      host:
+        - {{ pin_subpackage("libitk", exact=True) }}
+      run:
+        - {{ pin_subpackage("libitk-devel", exact=True) }}
+        - {{ pin_subpackage("libitk-wrapping", exact=True) }}
+        - swig
+        - castxml
+        - pygccxml
+    test:
+      commands:
+        - test -f $PREFIX/lib/cmake/Wrapping/CMakeLists.txt              # [not win]
+        - test -f $PREFIX/lib/cmake/ITK-6.0/WrappingConfigCommon.cmake   # [not win]
+        - test -f $PREFIX/lib/cmake/ITK-6.0/ITKModuleExternal.cmake      # [not win]
+        - if not exist %LIBRARY_PREFIX%\\lib\\cmake\\Wrapping\\CMakeLists.txt exit 1            # [win]
+        - if not exist %LIBRARY_PREFIX%\\lib\\cmake\\ITK-6.0\\WrappingConfigCommon.cmake exit 1 # [win]
+        - if not exist %LIBRARY_PREFIX%\\lib\\cmake\\ITK-6.0\\ITKModuleExternal.cmake exit 1    # [win]
 
 about:
   home: http://www.itk.org
