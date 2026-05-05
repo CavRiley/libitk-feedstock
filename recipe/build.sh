@@ -46,7 +46,7 @@ cmake \
     -D ITK_BUILD_DEFAULT_MODULES:BOOL=ON \
     -D NIFTI_SYSTEM_MATH_LIB= \
     -D GDCM_USE_COREFOUNDATION_LIBRARY:BOOL=OFF \
-    -D Module_ITKReview:BOOL=ON \
+    -D Module_ITKReview:BOOL=OFF \
     -D Module_SimpleITKFilters=ON \
     -D Module_ITKTBB:BOOL=${use_tbb} \
     -D Module_MGHIO:BOOL=ON \

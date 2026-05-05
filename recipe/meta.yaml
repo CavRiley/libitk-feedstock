@@ -32,6 +32,7 @@ requirements:
     - libjpeg-turbo
     - libtiff
     - libpng                    # [not win]
+    - openjpeg
     - eigen
     - zlib                      # [not win]
     - tbb-devel
@@ -49,6 +50,7 @@ outputs:
         - libjpeg-turbo
         - libtiff
         - libpng                    # [not win]
+        - openjpeg
         - eigen
         - zlib                      # [not win]
         - tbb
