@@ -38,3 +38,50 @@ done < <(find Modules -type d -name wrapping)
 # lookups.
 mkdir -p "${TYPEDEFS_DEST}"
 cp -R "${BUILD_DIR}/Wrapping/Typedefs/." "${TYPEDEFS_DEST}/"
+
+# Append an Eigen3-include hook to WrappingConfigCommon.cmake (which we just
+# installed above). When a remote module's CMake includes
+# ITKModuleExternal.cmake → WrappingConfigCommon.cmake, find_package(ITK) has
+# already loaded ITKEigen3.cmake which calls find_package(Eigen3), defining
+# the Eigen3::Eigen imported target. ITK propagates Eigen only via the target
+# (which castxml does not consume — it does not link). The wrapping pass
+# builds castxml's include set via get_directory_property(... INCLUDE_DIRECTORIES)
+# (Wrapping/macro_files/itk_auto_load_submodules.cmake), so we need the path
+# in that directory property. Modern Eigen3Config.cmake does NOT set
+# EIGEN3_INCLUDE_DIR; the path lives on the target's
+# INTERFACE_INCLUDE_DIRECTORIES property — read it from there.
+WRAP_CFG="${ITK_CMAKE_DEST}/WrappingConfigCommon.cmake"
+if [[ -f "${WRAP_CFG}" ]]; then
+    cat >> "${WRAP_CFG}" <<'EOF'
+
+# Added by libitk-feedstock libitk-wrapping-devel_install.sh: feed two paths
+# into the directory's INCLUDE_DIRECTORIES property so the wrapping/castxml
+# pass (which reads it via `get_directory_property`) finds:
+#   1. Eigen3 headers — pulled off the Eigen3::Eigen target's INTERFACE_INCLUDE_DIRECTORIES.
+#      Modern Eigen3Config does not set EIGEN3_INCLUDE_DIR; only the imported
+#      target carries the path, and castxml does not consume targets.
+#   2. The consumer module's own `include/` — itk_module_impl() in
+#      ITKModuleMacros.cmake should add this via include_directories(),
+#      but for unclear reasons it does not propagate to the wrapping subdir's
+#      directory snapshot in pixi-build-cmake builds. Adding it explicitly
+#      here (where CMAKE_CURRENT_SOURCE_DIR is the consumer's root because
+#      WrappingConfigCommon is included from ITKModuleExternal at top-level
+#      consumer scope) is reliable.
+if(TARGET Eigen3::Eigen)
+  get_target_property(_libitk_wrap_eigen_incs
+    Eigen3::Eigen INTERFACE_INCLUDE_DIRECTORIES)
+  if(_libitk_wrap_eigen_incs)
+    include_directories(${_libitk_wrap_eigen_incs})
+  endif()
+  unset(_libitk_wrap_eigen_incs)
+endif()
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include")
+  include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
+endif()
+# Also feed in the consumer's binary include/ for CMake-generated headers
+# (e.g., IOScancoExport.h from generate_export_header). This dir doesn't
+# exist yet at configure time — that's fine; CMake records the path and the
+# header lands here during the build before castxml runs.
+include_directories("${CMAKE_CURRENT_BINARY_DIR}/include")
+EOF
+fi
